@@ -758,3 +758,11 @@ def g(x: S = c):  # OK
     ...
 def h(x: S = b):  # E: Incompatible default for parameter "x" (default has type "B", parameter has type "S")
     ...
+
+[case testGenericTypeWithConstrainedTypeVarShouldNotInterfereWithVarargsArgumentTypeChecking-xfail]
+# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved , e.g. https://mypy-play.net/?gist=add309324ba69e0f95523aa82d12a0a4
+# flags: --python-version 3.12
+def generic_fun[TypeVarWithConstraints: (str, bytes),](a: TypeVarWithConstraints, *args: *tuple[int, float]):
+    pass
+
+[builtins fixtures/tuple.pyi]
