@@ -772,6 +772,19 @@ generic_fun("a", 1, "a") # E: Argument 3 to "generic_fun" has incompatible type 
 
 [builtins fixtures/tuple.pyi]
 
+[case testGenericTypeWithKeywordConstrainedTypeVarShouldNotBeInterferedWithByVarargsArgumentTypeChecking-xfail]
+# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+# flags: --python-version 3.12
+def generic_fun[TypeVarWithConstraints: (str, bytes),](*args: *tuple[int, float], keywordarg: TypeVarWithConstraints):
+    pass
+
+generic_fun(1, 1.1,keywordarg="a") # OK
+generic_fun(1, 1.1,keywordarg=1) # E: Value of type variable "TypeVarWithConstraints" of "generic_fun" cannot be "int"
+generic_fun(1.1, 1.1,keywordarg="a") # E: Argument 1 to "generic_fun" has incompatible type "float"; expected "int"
+generic_fun(1, "a",keywordarg="a") # E: Argument 2 to "generic_fun" has incompatible type "str"; expected "float"
+
+[builtins fixtures/tuple.pyi]
+
 [case testGenericTypeWithConstrainedTypeVarShouldBeAbleToBePartOfVarArgType-xfail]
 # -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
 # flags: --python-version 3.12
@@ -813,6 +826,18 @@ generic_fun(some_fun_returns_int, 1, 1.1) # E: Value of type variable "TypeVarWi
 generic_fun(some_fun_returns_str, 'a', 1.1) # E: Argument 2 to "generic_fun" has incompatible type "str"; expected "int"
 generic_fun(some_fun_returns_str, 1, 'a') # E: Argument 3 to "generic_fun" has incompatible type "str"; expected "float"
 generic_fun(some_fun_no_params_returns_int, 1, 1.1) # E: Value of type variable "TypeVarWithConstraints" of "generic_fun" cannot be "int"
+
+def generic_fun_with_keywordarg_after_vararg[
+   TypeVarWithConstraints: (str, bytes),
+](
+   a: Callable[..., TypeVarWithConstraints],
+   *args: *tuple[int, float],
+   keywordarg: str = 'default'
+): pass
+
+generic_fun_with_keywordarg_after_vararg(some_fun_returns_str, 1, 1.1) # OK
+generic_fun_with_keywordarg_after_vararg(some_fun_returns_str, 1, 1.1, keywordarg='ok') # OK
+generic_fun_with_keywordarg_after_vararg(some_fun_returns_str, 1, 1.1, keywordarg=3) # E: Argument "keywordarg" to "generic_fun_with_keywordarg_after_vararg" has incompatible type "int"; expected "str"
 
 [builtins fixtures/tuple.pyi]
 
@@ -858,3 +883,36 @@ generic_fun_with_paramspec_and_constrained_return(some_fun_returns_int) # E: Val
 generic_fun_with_paramspec_and_constrained_return(some_fun_wrong_param_returns_bytes) # E: Argument 1 to "generic_fun_with_paramspec_and_constrained_return" has incompatible type "Callable[[str, bytearray], bytes]"; expected "Callable[[int, bytearray], bytes]"
 
 [builtins fixtures/primitives.pyi]
+
+[case testGenericTypeWithConstrainedTypeVarInCallableReturnShouldNotInterfereWithVarargsArgumentTypeCheckingUseArgType-xfail]
+# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+# flags: --python-version 3.12
+from typing import Callable, Any
+
+def generic_fun[
+   TypeVarWithConstraints: (str, bytes),
+](
+   a: Callable[..., TypeVarWithConstraints],
+   *args: *tuple[int, float],
+   keywordarg: Any
+):
+  class Sub(keywordarg): pass
+
+[builtins fixtures/tuple.pyi]
+
+[case testCallableTypeVarBoundAfterConstrainedTypeParamAndVarArgs-xfail]
+# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+# -- derived from https://github.com/python/mypy/blob/8e5b0e34a5032760fa1916c39202a185d5fb0ea0/test-data/unit/check-callable.test#L317
+# -- modified for the #21907 problem
+# flags: --python-version 3.12
+class A:
+    def __call__(self) -> str:
+        return 'hi'
+
+def f[TypeVarWithConstraints: (str, int), T: A](x: TypeVarWithConstraints, *args: *tuple[int, float], keywordarg: T) -> str:
+    if callable(keywordarg):
+        return keywordarg()
+    else:
+        return 5
+
+[builtins fixtures/callable.pyi]
