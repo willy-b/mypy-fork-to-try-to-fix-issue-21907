@@ -765,4 +765,96 @@ def h(x: S = b):  # E: Incompatible default for parameter "x" (default has type 
 def generic_fun[TypeVarWithConstraints: (str, bytes),](a: TypeVarWithConstraints, *args: *tuple[int, float]):
     pass
 
+generic_fun("a", 1, 1.1) # OK
+generic_fun(1, 1, 1.1) # E: Value of type variable "TypeVarWithConstraints" of "generic_fun" cannot be "int"
+generic_fun("a", 1.1, 1.1) # E: Argument 2 to "generic_fun" has incompatible type "float"; expected "int"
+generic_fun("a", 1, "a") # E: Argument 3 to "generic_fun" has incompatible type "str"; expected "float"
+
 [builtins fixtures/tuple.pyi]
+
+[case testGenericTypeWithConstrainedTypeVarShouldBeAbleToBePartOfVarArgType-xfail]
+# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+# flags: --python-version 3.12
+def generic_fun[TypeVarWithConstraints: (str, bytes),](*args: *tuple[TypeVarWithConstraints, float]): pass
+
+generic_fun("a", 1.1) # OK
+generic_fun(1, 1.1) # E: Value of type variable "TypeVarWithConstraints" of "generic_fun" cannot be "int"
+generic_fun("a", "a") # E: Argument 2 to "generic_fun" has incompatible type "str"; expected "float"
+
+[builtins fixtures/tuple.pyi]
+
+[case testGenericTypeWithConstrainedTypeVarInCallableReturnShouldNotInterfereWithVarargsArgumentTypeChecking-xfail]
+# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+# flags: --python-version 3.12
+from typing import Callable
+
+def generic_fun[
+   TypeVarWithConstraints: (str, bytes),
+](
+   a: Callable[..., TypeVarWithConstraints],
+   *args: *tuple[int, float]
+): pass
+
+
+def some_fun_returns_str(a: int, b: bytearray) -> str:
+    return 'abc'
+
+def some_fun_returns_bytes(a: int, b: bytearray) -> bytes:
+    return b'abc'
+
+def some_fun_returns_int(a: int, b: bytearray) -> int:
+    return 1
+
+def some_fun_no_params_returns_int() -> int:
+    return 1
+
+generic_fun(some_fun_returns_str, 1, 1.1) # OK
+generic_fun(some_fun_returns_int, 1, 1.1) # E: Value of type variable "TypeVarWithConstraints" of "generic_fun" cannot be "int"
+generic_fun(some_fun_returns_str, 'a', 1.1) # E: Argument 2 to "generic_fun" has incompatible type "str"; expected "int"
+generic_fun(some_fun_returns_str, 1, 'a') # E: Argument 3 to "generic_fun" has incompatible type "str"; expected "float"
+generic_fun(some_fun_no_params_returns_int, 1, 1.1) # E: Value of type variable "TypeVarWithConstraints" of "generic_fun" cannot be "int"
+
+[builtins fixtures/tuple.pyi]
+
+[case testGenericTypeWithConstrainedTypeVarInCallableReturnShouldBeChecked]
+# flags: --python-version 3.12
+from typing import Callable
+
+def generic_fun[
+   TypeVarWithConstraints: (str, bytes),
+](
+   a: Callable[..., TypeVarWithConstraints],
+): pass
+
+def some_fun_returns_str(a: int, b: bytearray) -> str:
+    return 'abc'
+
+def some_fun_returns_bytes(a: int, b: bytearray) -> bytes:
+    return b'abc'
+
+def some_fun_returns_int(a: int, b: bytearray) -> int:
+    return 1
+
+def some_fun_no_params_returns_int() -> int:
+    return 1
+
+generic_fun(some_fun_returns_str) # OK
+generic_fun(some_fun_returns_bytes) # OK
+generic_fun(some_fun_returns_int) # E: Value of type variable "TypeVarWithConstraints" of "generic_fun" cannot be "int"
+generic_fun(some_fun_no_params_returns_int) # E: Value of type variable "TypeVarWithConstraints" of "generic_fun" cannot be "int"
+
+def generic_fun_with_paramspec_and_constrained_return[
+   TypeVarWithConstraints: (str, bytes),
+](
+   a: Callable[[int, bytearray], TypeVarWithConstraints],
+): pass
+
+def some_fun_wrong_param_returns_bytes(a: str, b: bytearray) -> bytes:
+    return b'abc'
+
+generic_fun_with_paramspec_and_constrained_return(some_fun_returns_str) # OK
+generic_fun_with_paramspec_and_constrained_return(some_fun_returns_bytes) # OK
+generic_fun_with_paramspec_and_constrained_return(some_fun_returns_int) # E: Value of type variable "TypeVarWithConstraints" of "generic_fun_with_paramspec_and_constrained_return" cannot be "int"
+generic_fun_with_paramspec_and_constrained_return(some_fun_wrong_param_returns_bytes) # E: Argument 1 to "generic_fun_with_paramspec_and_constrained_return" has incompatible type "Callable[[str, bytearray], bytes]"; expected "Callable[[int, bytearray], bytes]"
+
+[builtins fixtures/primitives.pyi]
