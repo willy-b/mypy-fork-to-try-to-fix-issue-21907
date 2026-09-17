@@ -434,3 +434,25 @@ def g() -> Literal[1]:
 <m.Alias> -> <m.f>, m, m.f
 <m.a> -> m
 <m.b> -> m, m.g
+
+[case testUnionTypeOperationAfterConstrainedTypeParamAndVarArgs-xfail]
+# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+# -- derived from https://github.com/python/mypy/blob/8e5b0e34a5032760fa1916c39202a185d5fb0ea0/test-data/unit/deps-expressions.test#L362
+# -- modified for the #21907 problem
+# flags: --python-version 3.12
+from typing import Union
+
+class A:
+    def __add__(self, x: str) -> int: pass
+class B:
+    def __add__(self, x: str) -> int: pass
+
+def f[TypeVarWithConstraints: (str, int)](x: TypeVarWithConstraints, *args: *tuple[int, float], a: Union[A, B]) -> int:
+    return a + ''
+[out]
+<m.A.__add__> -> m.f
+<m.A> -> <m.f>, m.A, m.f
+<m.B.__add__> -> m.f
+<m.B> -> <m.f>, m.B, m.f
+<m.TypeVarWithConstraints> -> <m.f>, m.f
+[builtins fixtures/tuple.pyi]
