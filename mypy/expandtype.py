@@ -63,11 +63,11 @@ def expand_type(typ: ProperType, env: Mapping[TypeVarId, Type]) -> ProperType: .
 def expand_type(typ: Type, env: Mapping[TypeVarId, Type]) -> Type: ...
 
 
-def expand_type(typ: Type, env: Mapping[TypeVarId, Type]) -> Type:
+def expand_type(typ: Type, env: Mapping[TypeVarId, Type], skip_callable_var_arg_unpack : bool = False) -> Type:
     """Substitute any type variable references in a type given by a type
     environment.
     """
-    return typ.accept(ExpandTypeVisitor(env))
+    return typ.accept(ExpandTypeVisitor(env, skip_callable_var_arg_unpack_normalization=skip_callable_var_arg_unpack))
 
 
 @overload
@@ -182,9 +182,10 @@ class ExpandTypeVisitor(TrivialSyntheticTypeTranslator):
 
     variables: Mapping[TypeVarId, Type]  # TypeVar id -> TypeVar value
 
-    def __init__(self, variables: Mapping[TypeVarId, Type]) -> None:
+    def __init__(self, variables: Mapping[TypeVarId, Type], skip_callable_var_arg_unpack_normalization = False) -> None:
         super().__init__()
         self.variables = variables
+        self.skip_callable_var_arg_unpack_normalization = skip_callable_var_arg_unpack_normalization
 
     def visit_unbound_type(self, t: UnboundType) -> Type:
         return t
@@ -481,7 +482,7 @@ class ExpandTypeVisitor(TrivialSyntheticTypeTranslator):
 
         var_arg = t.var_arg()
         needs_normalization = False
-        if var_arg is not None and isinstance(var_arg.typ, UnpackType):
+        if var_arg is not None and isinstance(var_arg.typ, UnpackType) and not self.skip_callable_var_arg_unpack_normalization:
             needs_normalization = True
             arg_types = self.interpolate_args_for_unpack(t, var_arg.typ)
         else:

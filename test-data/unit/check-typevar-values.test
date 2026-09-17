@@ -759,8 +759,7 @@ def g(x: S = c):  # OK
 def h(x: S = b):  # E: Incompatible default for parameter "x" (default has type "B", parameter has type "S")
     ...
 
-[case testGenericTypeWithConstrainedTypeVarShouldNotInterfereWithVarargsArgumentTypeChecking-xfail]
-# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved , e.g. https://mypy-play.net/?gist=add309324ba69e0f95523aa82d12a0a4
+[case testGenericTypeWithConstrainedTypeVarShouldNotInterfereWithVarargsArgumentTypeChecking]
 # flags: --python-version 3.12
 def generic_fun[TypeVarWithConstraints: (str, bytes),](a: TypeVarWithConstraints, *args: *tuple[int, float]):
     pass
@@ -772,8 +771,7 @@ generic_fun("a", 1, "a") # E: Argument 3 to "generic_fun" has incompatible type 
 
 [builtins fixtures/tuple.pyi]
 
-[case testGenericTypeWithKeywordConstrainedTypeVarShouldNotBeInterferedWithByVarargsArgumentTypeChecking-xfail]
-# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+[case testGenericTypeWithKeywordConstrainedTypeVarShouldNotBeInterferedWithByVarargsArgumentTypeChecking]
 # flags: --python-version 3.12
 def generic_fun[TypeVarWithConstraints: (str, bytes),](*args: *tuple[int, float], keywordarg: TypeVarWithConstraints):
     pass
@@ -785,8 +783,7 @@ generic_fun(1, "a",keywordarg="a") # E: Argument 2 to "generic_fun" has incompat
 
 [builtins fixtures/tuple.pyi]
 
-[case testGenericTypeWithConstrainedTypeVarShouldBeAbleToBePartOfVarArgType-xfail]
-# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+[case testGenericTypeWithConstrainedTypeVarShouldBeAbleToBePartOfVarArgType]
 # flags: --python-version 3.12
 def generic_fun[TypeVarWithConstraints: (str, bytes),](*args: *tuple[TypeVarWithConstraints, float]): pass
 
@@ -796,8 +793,7 @@ generic_fun("a", "a") # E: Argument 2 to "generic_fun" has incompatible type "st
 
 [builtins fixtures/tuple.pyi]
 
-[case testGenericTypeWithConstrainedTypeVarInCallableReturnShouldNotInterfereWithVarargsArgumentTypeChecking-xfail]
-# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+[case testGenericTypeWithConstrainedTypeVarInCallableReturnShouldNotInterfereWithVarargsArgumentTypeChecking]
 # flags: --python-version 3.12
 from typing import Callable
 
@@ -884,8 +880,7 @@ generic_fun_with_paramspec_and_constrained_return(some_fun_wrong_param_returns_b
 
 [builtins fixtures/primitives.pyi]
 
-[case testGenericTypeWithConstrainedTypeVarInCallableReturnShouldNotInterfereWithVarargsArgumentTypeCheckingUseArgType-xfail]
-# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+[case testGenericTypeWithConstrainedTypeVarInCallableReturnShouldNotInterfereWithVarargsArgumentTypeCheckingUsingArgumentTypeForInheritance]
 # flags: --python-version 3.12
 from typing import Callable, Any
 
@@ -898,12 +893,89 @@ def generic_fun[
 ):
   class Sub(keywordarg): pass
 
+def a() -> str:
+    return 'ok'
+
+generic_fun(a, 1, 1.1, keywordarg=str)
+
 [builtins fixtures/tuple.pyi]
 
-[case testCallableTypeVarBoundAfterConstrainedTypeParamAndVarArgs-xfail]
+[case testGenericTypeWithConstrainedTypeVarInCallableReturnShouldNotInterfereWithVarargsArgumentTypeCheckingUsingArgumentTypeFromVarArgsForInheritanceExplicitCastOk]
+# flags: --python-version 3.12
+from typing import Callable, Any
+
+def generic_fun_explicit_cast_varargs_element_to_type_used_for_inherit[
+   TypeVarWithConstraints: (str, bytes),
+](
+   a: Callable[..., TypeVarWithConstraints],
+   *args: *tuple[int, Any],
+):
+  # allowed
+  x : type = args[1]
+  class Sub(x): pass
+
+def a() -> str:
+    return 'ok'
+
+generic_fun_explicit_cast_varargs_element_to_type_used_for_inherit(a, 1, str)
+
+[builtins fixtures/tuple.pyi]
+
+[case testGenericTypeWithConstrainedTypeVarInCallableReturnShouldNotInterfereWithVarargsArgumentTypeCheckingUsingArgumentTypeFromVarArgsForInheritance-xfail]
+# flags: --python-version 3.12
+from typing import Callable, Any
+
+def generic_fun_varargs_element_to_type_used_for_inherit[
+   TypeVarWithConstraints: (str, bytes),
+](
+   a: Callable[..., TypeVarWithConstraints],
+   *args: *tuple[int, Any],
+):
+  # not allowed by mypy but allowed by pyright and others
+  # (this may be a bug in mypy, see https://github.com/python/mypy/issues/21998 )
+  x = args[1]
+  class Sub(x): pass
+
+def a() -> str:
+    return 'ok'
+
+generic_fun_varargs_element_to_type_used_for_inherit(a, 1, str)
+
+[builtins fixtures/tuple.pyi]
+
+[case testVarargsArgumentTypeCheckingUsingArgumentTypeFromVarArgsForInheritanceExplicitCastOk]
+# flags: --python-version 3.12
+from typing import Any
+
+def fun_explicit_cast_varargs_element_to_type_used_for_inherit(
+   *args: *tuple[int, Any],
+):
+  # allowed
+  x : type = args[1]
+  class Sub(x): pass
+
+fun_explicit_cast_varargs_element_to_type_used_for_inherit(1, str)
+
+[builtins fixtures/tuple.pyi]
+
+[case testVarargsArgumentTypeCheckingUsingArgumentTypeFromVarArgsForInheritance-xfail]
+# flags: --python-version 3.12
+from typing import Any
+
+def fun_varargs_element_to_type_used_for_inherit(
+   *args: *tuple[int, Any],
+):
+  # not allowed by mypy but allowed by pyright and others 
+  # (may be a bug in mypy see https://github.com/python/mypy/issues/21998 )
+  x = args[1]
+  class Sub(x): pass
+
+fun_varargs_element_to_type_used_for_inherit(1, str)
+
+[builtins fixtures/tuple.pyi]
+
+[case testCallableTypeVarBoundAfterConstrainedTypeParamAndVarArgs]
 # -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
-# -- derived from https://github.com/python/mypy/blob/8e5b0e34a5032760fa1916c39202a185d5fb0ea0/test-data/unit/check-callable.test#L317
-# -- modified for the #21907 problem
 # flags: --python-version 3.12
 class A:
     def __call__(self) -> str:

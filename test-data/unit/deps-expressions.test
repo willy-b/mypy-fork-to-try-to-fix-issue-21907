@@ -435,8 +435,7 @@ def g() -> Literal[1]:
 <m.a> -> m
 <m.b> -> m, m.g
 
-[case testUnionTypeOperationAfterConstrainedTypeParamAndVarArgs-xfail]
-# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+[case testUnionTypeOperationAfterConstrainedTypeParamAndVarArgs]
 # -- derived from https://github.com/python/mypy/blob/8e5b0e34a5032760fa1916c39202a185d5fb0ea0/test-data/unit/deps-expressions.test#L362
 # -- modified for the #21907 problem
 # flags: --python-version 3.12

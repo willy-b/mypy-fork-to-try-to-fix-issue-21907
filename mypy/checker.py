@@ -2292,7 +2292,7 @@ class TypeChecker(NodeVisitor[None], TypeCheckerSharedApi, SplittingVisitor):
             result: list[tuple[FuncItem, CallableType]] = []
             for substitutions in itertools.product(*subst):
                 mapping = dict(substitutions)
-                result.append((expand_func(defn, mapping), expand_type(typ, mapping)))
+                result.append((expand_func(defn, mapping), expand_type(typ, mapping, skip_callable_var_arg_unpack=True)))
             return result
         else:
             return [(defn, typ)]

@@ -48,8 +48,7 @@ A = Foo
 assert_type(A, type[Foo])
 [builtins fixtures/tuple.pyi]
 
-[case testAssertTypeFail1AfterConstrainedTypeParamAndVarArgs-xfail]
-# -- expected to fail with INTERNAL ERROR until https://github.com/python/mypy/issues/21907 is resolved
+[case testAssertTypeFail1AfterConstrainedTypeParamAndVarArgs]
 # -- derived from https://github.com/python/mypy/blob/8e5b0e34a5032760fa1916c39202a185d5fb0ea0/test-data/unit/check-assert-type-fail.test#L1
 # -- modified for the #21907 problem
 # flags: --python-version 3.12
